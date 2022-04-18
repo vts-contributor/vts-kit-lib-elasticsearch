@@ -1,0 +1,1 @@
+# vts-kit-ms-elasticsearch-data
