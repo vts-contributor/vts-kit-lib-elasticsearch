@@ -1,6 +1,5 @@
 package search;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import constants.PageConstants;
 import exception.ValidateException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -9,9 +8,8 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.util.CollectionUtils;
 import request.SearchRequestDTO;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,14 +17,6 @@ public class ElasticSearchBuilder {
 
     private static boolean isSortBy(SearchRequestDTO searchRequestDTO) {
         return (searchRequestDTO.getSortBy() != null);
-    }
-
-    private static SearchRequestDTO convertObjectToClass(Object o) throws JsonProcessingException {
-        ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
-        String json = ow.writeValueAsString(o);
-        SearchRequestDTO searchRequestDTO = new ObjectMapper().readValue(json, SearchRequestDTO.class);
-
-        return searchRequestDTO;
     }
 
     private static void validateSearchRequest(SearchRequestDTO searchRequestDTO) {
@@ -39,12 +29,12 @@ public class ElasticSearchBuilder {
         }
     }
 
-    private static SearchSourceBuilder searchSourceBuilder(Object requestDTO, QueryBuilder queryBuilder) throws JsonProcessingException {
-        SearchRequestDTO searchRequestDTO = convertObjectToClass(requestDTO);
+    private static <T> SearchSourceBuilder searchSourceBuilder(SearchRequestDTO searchRequestDTO, QueryBuilder queryBuilder, Class<T> responseDTO) {
         validateSearchRequest(searchRequestDTO);
         final int from = searchRequestDTO.getPage() <= 0 ? 0 : searchRequestDTO.getPage() * searchRequestDTO.getSize();
 
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+                .fetchSource(getSource(responseDTO),null)
                 .from(from)
                 .size(searchRequestDTO.getSize())
                 .query(queryBuilder);
@@ -59,13 +49,25 @@ public class ElasticSearchBuilder {
         return searchSourceBuilder;
     }
 
+    private static <T> String [] getSource(Class<T> tClass) {
+        Field[] fields = tClass.getDeclaredFields();
+        String[] sources = new String[fields.length];
+        int index = 0;
+        for (Field field : fields) {
+            sources[index] = field.getName();
+            index += 1;
+        }
+
+        return sources;
+    }
+
     private static QueryBuilder getHandleQueryBuilder(BoolQueryBuilder boolQuery) {
         return QueryBuilders.boolQuery().filter(boolQuery);
     }
 
-    public static SearchRequest buildHandleSearchRequest(String indexName, Object requestDTO, BoolQueryBuilder boolQuery) {
+    public static <T> SearchRequest buildHandleSearchRequest(String indexName, SearchRequestDTO searchRequestDTO, BoolQueryBuilder boolQuery, Class<T> responseDTO) {
         try {
-            SearchSourceBuilder searchSourceBuilder = searchSourceBuilder(requestDTO, getHandleQueryBuilder(boolQuery));
+            SearchSourceBuilder searchSourceBuilder = searchSourceBuilder(searchRequestDTO, getHandleQueryBuilder(boolQuery), responseDTO);
             SearchRequest searchRequest = new SearchRequest(indexName);
             searchRequest.source(searchSourceBuilder);
 
@@ -76,8 +78,7 @@ public class ElasticSearchBuilder {
         }
     }
 
-    private static QueryBuilder getMatchPhrasePrefixQuery(Object requestDTO) throws JsonProcessingException {
-        SearchRequestDTO searchRequestDTO = convertObjectToClass(requestDTO);
+    private static QueryBuilder getMatchPhrasePrefixQuery(SearchRequestDTO searchRequestDTO) {
 
         return searchRequestDTO.getFields().stream()
                 .findFirst().map(field -> QueryBuilders.multiMatchQuery(searchRequestDTO.getTextSearch(), field)
@@ -87,9 +88,9 @@ public class ElasticSearchBuilder {
                 .orElse(null);
     }
 
-    public static SearchRequest buildMatchPhrasePrefixSearchRequest(String indexName, Object requestDTO) {
+    public static <T> SearchRequest buildMatchPhrasePrefixSearchRequest(String indexName, SearchRequestDTO searchRequestDTO, Class<T> responseDTO) {
         try {
-            SearchSourceBuilder searchSourceBuilder = searchSourceBuilder(requestDTO, getMatchPhrasePrefixQuery(requestDTO));
+            SearchSourceBuilder searchSourceBuilder = searchSourceBuilder(searchRequestDTO, getMatchPhrasePrefixQuery(searchRequestDTO), responseDTO);
             SearchRequest searchRequest = new SearchRequest(indexName);
             searchRequest.source(searchSourceBuilder);
 
@@ -100,9 +101,7 @@ public class ElasticSearchBuilder {
         }
     }
 
-    private static QueryBuilder getMatchPhraseQuery(Object requestDTO) throws JsonProcessingException {
-        SearchRequestDTO searchRequestDTO = convertObjectToClass(requestDTO);
-
+    private static QueryBuilder getMatchPhraseQuery(SearchRequestDTO searchRequestDTO) {
         MultiMatchQueryBuilder queryBuilder =  QueryBuilders.multiMatchQuery(searchRequestDTO.getTextSearch())
                 .type(MultiMatchQueryBuilder.Type.PHRASE)
                 .operator(Operator.OR)
@@ -112,9 +111,9 @@ public class ElasticSearchBuilder {
         return queryBuilder;
     }
 
-    public static SearchRequest buildMatchPhraseSearchRequest(String indexName, Object requestDTO) {
+    public static <T> SearchRequest buildMatchPhraseSearchRequest(String indexName, SearchRequestDTO searchRequestDTO, Class<T> responseDTO) {
         try {
-            SearchSourceBuilder searchSourceBuilder = searchSourceBuilder(requestDTO, getMatchPhraseQuery(requestDTO));
+            SearchSourceBuilder searchSourceBuilder = searchSourceBuilder(searchRequestDTO, getMatchPhraseQuery(searchRequestDTO), responseDTO);
             SearchRequest searchRequest = new SearchRequest(indexName);
             searchRequest.source(searchSourceBuilder);
 
@@ -125,8 +124,7 @@ public class ElasticSearchBuilder {
         }
     }
 
-    private static QueryBuilder getRegexpQueryBuilder(Object requestDTO) throws JsonProcessingException {
-        SearchRequestDTO searchRequestDTO = convertObjectToClass(requestDTO);
+    private static QueryBuilder getRegexpQueryBuilder(SearchRequestDTO searchRequestDTO) {
         BoolQueryBuilder boolQuery = new BoolQueryBuilder();
         searchRequestDTO.getFields().forEach(
                 field -> boolQuery.should(QueryBuilders.regexpQuery(field, searchRequestDTO.getTextSearch()).caseInsensitive(true)));
@@ -134,9 +132,9 @@ public class ElasticSearchBuilder {
         return QueryBuilders.boolQuery().filter(boolQuery);
     }
 
-    public static SearchRequest buildRegexpSearchRequest(String indexName, Object requestDTO) {
+    public static <T> SearchRequest buildRegexpSearchRequest(String indexName, SearchRequestDTO searchRequestDTO, Class<T> responseDTO) {
         try {
-            SearchSourceBuilder searchSourceBuilder = searchSourceBuilder(requestDTO, getRegexpQueryBuilder(requestDTO));
+            SearchSourceBuilder searchSourceBuilder = searchSourceBuilder(searchRequestDTO, getRegexpQueryBuilder(searchRequestDTO), responseDTO);
             SearchRequest searchRequest = new SearchRequest(indexName);
             searchRequest.source(searchSourceBuilder);
 
@@ -147,8 +145,7 @@ public class ElasticSearchBuilder {
         }
     }
 
-    private static QueryBuilder getFuzzyQueriesBuilder(Object requestDTO) throws JsonProcessingException {
-        SearchRequestDTO searchRequestDTO = convertObjectToClass(requestDTO);
+    private static QueryBuilder getFuzzyQueriesBuilder(SearchRequestDTO searchRequestDTO) {
         if (searchRequestDTO == null){
             return null;
         }
@@ -164,9 +161,9 @@ public class ElasticSearchBuilder {
         return queryBuilder;
     }
 
-    public static SearchRequest buildFuzzySearchRequest(String indexName, Object requestDTO) {
+    public static <T> SearchRequest buildFuzzySearchRequest(String indexName, SearchRequestDTO searchRequestDTO, Class<T> responseDTO) {
         try {
-            SearchSourceBuilder searchSourceBuilder = searchSourceBuilder(requestDTO, getFuzzyQueriesBuilder(requestDTO));
+            SearchSourceBuilder searchSourceBuilder = searchSourceBuilder(searchRequestDTO, getFuzzyQueriesBuilder(searchRequestDTO), responseDTO);
             SearchRequest searchRequest = new SearchRequest(indexName);
             searchRequest.source(searchSourceBuilder);
 
@@ -177,8 +174,7 @@ public class ElasticSearchBuilder {
         }
     }
 
-    private static QueryBuilder getWildCardQueryBuilder(Object requestDTO) throws JsonProcessingException {
-        SearchRequestDTO searchRequestDTO = convertObjectToClass(requestDTO);
+    private static QueryBuilder getWildCardQueryBuilder(SearchRequestDTO searchRequestDTO) {
         if (CollectionUtils.isEmpty(searchRequestDTO.getFields())) {
             return null;
         }
@@ -194,9 +190,9 @@ public class ElasticSearchBuilder {
         return QueryBuilders.boolQuery().filter(boolQuery);
     }
 
-    public static SearchRequest buildWildCardSearchRequest(String indexName, Object requestDTO) {
+    public static <T> SearchRequest buildWildCardSearchRequest(String indexName, SearchRequestDTO searchRequestDTO, Class<T> responseDTO) {
         try {
-            SearchSourceBuilder searchSourceBuilder = searchSourceBuilder(requestDTO, getWildCardQueryBuilder(requestDTO));
+            SearchSourceBuilder searchSourceBuilder = searchSourceBuilder(searchRequestDTO, getWildCardQueryBuilder(searchRequestDTO), responseDTO);
             if (searchSourceBuilder == null) {
                 return null;
             }
@@ -210,18 +206,16 @@ public class ElasticSearchBuilder {
         }
     }
 
-    private static QueryBuilder getBoostingQueryBuilder(Object requestDTO) throws JsonProcessingException {
-        SearchRequestDTO searchRequestDTO = convertObjectToClass(requestDTO);
-
+    private static QueryBuilder getBoostingQueryBuilder(SearchRequestDTO searchRequestDTO) {
         return QueryBuilders.multiMatchQuery(searchRequestDTO.getTextSearch())
                 .type(MultiMatchQueryBuilder.Type.MOST_FIELDS)
                 .operator(Operator.OR)
-                .fields(searchRequestDTO.getFieldsAndWeight());
+                .fields(searchRequestDTO.getFieldsAndWeights());
     }
 
-    public static SearchRequest buildBoostingSearchRequest(String indexName, Object requestDTO) {
+    public static <T> SearchRequest buildBoostingSearchRequest(String indexName, SearchRequestDTO searchRequestDTO, Class<T> responseDTO) {
         try {
-            SearchSourceBuilder searchSourceBuilder = searchSourceBuilder(requestDTO, getBoostingQueryBuilder(requestDTO));
+            SearchSourceBuilder searchSourceBuilder = searchSourceBuilder(searchRequestDTO, getBoostingQueryBuilder(searchRequestDTO), responseDTO);
             SearchRequest searchRequest = new SearchRequest(indexName);
             searchRequest.source(searchSourceBuilder);
 
@@ -232,9 +226,9 @@ public class ElasticSearchBuilder {
         }
     }
 
-    public static SearchRequest buildMultiFieldSearchRequest(String indexName, Object requestDTO) {
+    public static <T> SearchRequest buildMultiFieldSearchRequest(String indexName, SearchRequestDTO searchRequestDTO, Class<T> responseDTO) {
         try {
-            SearchSourceBuilder searchSourceBuilder = searchSourceBuilder(requestDTO, getMultiFieldQueryBuilder(requestDTO));
+            SearchSourceBuilder searchSourceBuilder = searchSourceBuilder(searchRequestDTO, getMultiFieldQueryBuilder(searchRequestDTO), responseDTO);
             SearchRequest searchRequest = new SearchRequest(indexName);
             searchRequest.source(searchSourceBuilder);
 
@@ -245,9 +239,7 @@ public class ElasticSearchBuilder {
         }
     }
 
-    private static QueryBuilder getMultiFieldQueryBuilder(Object requestDTO) throws JsonProcessingException {
-        SearchRequestDTO searchRequestDTO = convertObjectToClass(requestDTO);
-
+    private static QueryBuilder getMultiFieldQueryBuilder(SearchRequestDTO searchRequestDTO) {
         final List<String> fields = searchRequestDTO.getFields();
         if (CollectionUtils.isEmpty(fields)) {
             return QueryBuilders.multiMatchQuery(searchRequestDTO.getTextSearch(), "*")

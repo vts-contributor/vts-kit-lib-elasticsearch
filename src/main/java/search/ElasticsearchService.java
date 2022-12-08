@@ -11,6 +11,7 @@ import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import request.SearchRequestDTO;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,74 +24,82 @@ public class ElasticsearchService {
     @Autowired
     private RestHighLevelClient client;
 
-    public <T> List<T> handleSearch(final String index, Object requestDTO, BoolQueryBuilder boolQuery, Class<T> responseDTO) {
+    public <T> List<T> handleSearch(final String index, SearchRequestDTO requestDTO, BoolQueryBuilder boolQuery, Class<T> responseDTO) {
         final SearchRequest request = ElasticSearchBuilder.buildHandleSearchRequest(
                 index,
                 requestDTO,
-                boolQuery
+                boolQuery,
+                responseDTO
         );
 
         return searchInternal(request, responseDTO);
     }
 
-    public <T> List<T> multiSearch(final String index, Object requestDTO, Class<T> responseDTO) {
+    public <T> List<T> multiSearch(final String index, SearchRequestDTO requestDTO, Class<T> responseDTO) {
         final SearchRequest request = ElasticSearchBuilder.buildMultiFieldSearchRequest(
                 index,
-                requestDTO
+                requestDTO,
+                responseDTO
         );
 
         return searchInternal(request, responseDTO);
     }
 
-    public <T> List<T> regexpSearch(final String index, Object requestDTO, Class<T> responseDTO) {
+    public <T> List<T> regexpSearch(final String index, SearchRequestDTO requestDTO, Class<T> responseDTO) {
         final SearchRequest request = ElasticSearchBuilder.buildRegexpSearchRequest(
                 index,
-                requestDTO
+                requestDTO,
+                responseDTO
         );
 
         return searchInternal(request, responseDTO);
     }
 
-    public <T> List<T> fuzzySearch(final String index, Object requestDTO, Class<T> responseDTO) {
+    public <T> List<T> fuzzySearch(final String index, SearchRequestDTO requestDTO, Class<T> responseDTO) {
         final SearchRequest request = ElasticSearchBuilder.buildFuzzySearchRequest(
                 index,
-                requestDTO
+                requestDTO,
+                responseDTO
         );
 
         return searchInternal(request, responseDTO);
     }
 
-    public <T> List<T> wildCardSearch(final String index, Object requestDTO, Class<T> responseDTO) {
+    public <T> List<T> wildCardSearch(final String index, SearchRequestDTO requestDTO, Class<T> responseDTO) {
         final SearchRequest request = ElasticSearchBuilder.buildWildCardSearchRequest(
                 index,
-                requestDTO
+                requestDTO,
+                responseDTO
         );
 
         return searchInternal(request, responseDTO);
     }
 
-    public <T> List<T> matchPhraseSearch(final String index, Object requestDTO, Class<T> responseDTO) {
+    public <T> List<T> matchPhraseSearch(final String index, SearchRequestDTO requestDTO, Class<T> responseDTO) {
         SearchRequest request = ElasticSearchBuilder.buildMatchPhraseSearchRequest(
                 index,
-                requestDTO
+                requestDTO,
+                responseDTO
         );
 
         return searchInternal(request, responseDTO);
     }
 
-    public <T> List<T> matchPhrasePrefixSearch(final String index, Object requestDTO, Class<T> responseDTO) {
+    public <T> List<T> matchPhrasePrefixSearch(final String index, SearchRequestDTO requestDTO, Class<T> responseDTO) {
         final SearchRequest request = ElasticSearchBuilder.buildMatchPhrasePrefixSearchRequest(
                 index,
-                requestDTO
+                requestDTO,
+                responseDTO
         );
 
         return searchInternal(request, responseDTO);
     }
 
-    public <T> List<T> boostingSearch(final String index, Object requestDTO, Class<T> responseDTO) {
+    public <T> List<T> boostingSearch(final String index, SearchRequestDTO requestDTO, Class<T> responseDTO) {
         final SearchRequest request = ElasticSearchBuilder.buildBoostingSearchRequest(
                 index,
-                requestDTO
+                requestDTO,
+                responseDTO
         );
 
         return searchInternal(request, responseDTO);
