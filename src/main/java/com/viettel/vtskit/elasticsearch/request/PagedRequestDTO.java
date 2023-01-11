@@ -1,4 +1,4 @@
-package request;
+package com.viettel.vtskit.elasticsearch.request;
 
 import lombok.Data;
 

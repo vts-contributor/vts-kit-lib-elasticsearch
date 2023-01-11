@@ -1,13 +1,13 @@
-package search;
+package com.viettel.vtskit.elasticsearch.search;
 
-import constants.PageConstants;
-import exception.ValidateException;
+import com.viettel.vtskit.elasticsearch.constants.PageConstants;
+import com.viettel.vtskit.elasticsearch.exception.ValidateException;
+import com.viettel.vtskit.elasticsearch.request.SearchRequestDTO;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.util.CollectionUtils;
-import request.SearchRequestDTO;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;

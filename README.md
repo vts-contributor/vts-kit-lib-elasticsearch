@@ -18,7 +18,7 @@ Quick start
 ```xml
 <dependency>
     <groupId>com.atviettelsolutions</groupId>
-    <artifactId>vts-kit-ms-elasticsearch-data</artifactId>
+    <artifactId>vts-kit-lib-elasticsearch-data</artifactId>
     <version>1.0.0</version>
 </dependency>
 ```

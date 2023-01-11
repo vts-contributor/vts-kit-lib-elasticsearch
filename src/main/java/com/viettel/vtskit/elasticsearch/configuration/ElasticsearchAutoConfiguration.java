@@ -1,5 +1,6 @@
 package com.viettel.vtskit.elasticsearch.configuration;
 
+import com.viettel.vtskit.elasticsearch.search.ElasticsearchService;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchProperties;
@@ -11,7 +12,6 @@ import org.springframework.data.elasticsearch.client.ClientConfiguration;
 import org.springframework.data.elasticsearch.client.RestClients;
 import org.springframework.data.elasticsearch.config.AbstractElasticsearchConfiguration;
 import org.springframework.http.HttpHeaders;
-import search.ElasticsearchService;
 
 @Configuration
 public class ElasticsearchAutoConfiguration extends AbstractElasticsearchConfiguration {
