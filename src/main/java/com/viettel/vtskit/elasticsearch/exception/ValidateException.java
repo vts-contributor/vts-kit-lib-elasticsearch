@@ -1,4 +1,4 @@
-package exception;
+package com.viettel.vtskit.elasticsearch.exception;
 
 public class ValidateException extends RuntimeException {
     private int errorCode = 400;

@@ -1,4 +1,4 @@
-package constants;
+package com.viettel.vtskit.elasticsearch.constants;
 
 public class PageConstants {
     public static final int SIZE = 100;
