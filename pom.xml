@@ -5,7 +5,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.atviettelsolutions</groupId>
-    <artifactId>vts-kit-lib-elasticsearch-data</artifactId>
+    <artifactId>vts-kit-lib-elasticsearch</artifactId>
     <version>1.0.0</version>
 
     <properties>
